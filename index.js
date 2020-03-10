@@ -176,7 +176,7 @@ const uploadPicsToIpfs = async (webhookUrl) => {
   };
   const driver = setupDriver(event);
   driver.get(event.url);
-  // await runThroughFlows(event, driver);
+  await runThroughFlows(event, driver);
   await uploadPicsToIpfs(event.webhookUrl);
   driver.quit();
   process.exit(0);
