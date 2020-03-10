@@ -6,7 +6,8 @@ const request = require('superagent');
 const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const chromedriver = require('chromedriver');
-const IPFS = require('ipfs');
+const ipfsClient = require('ipfs-http-client');
+const multihashes = require('multihashes');
 
 const getAllCommunities = async (driver) => {
   try {
@@ -101,7 +102,7 @@ const runThroughFlows = async (event, driver, identifier) => {
         await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), 5000);
         const image = await driver.takeScreenshot();
         fs.writeFileSync(`output/${communityTitle}-1-homepage.png`, image, 'base64');
-        await clickThroughNavItems(driver, text);
+        await clickThroughNavItems(driver, text, event.webhookUrl);
         const homeElt = (await driver.findElements(webdriver.By.className('header-logo')))[0];
         await homeElt.click();
         await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), 5000);
@@ -144,6 +145,27 @@ const setupDriver = (event) => {
   return driver;
 };
 
+const uploadPicsToIpfs = async (webhookUrl) => {
+  const ipfs = ipfsClient('/ip4/127.0.0.1/tcp/5001');
+  const pics = fs.readdirSync('output');
+  const files = pics.map((p) => ({
+    path: p,
+    content: fs.readFileSync(`output/${p}`),
+  }));
+
+  const result = await ipfs.add(files, { recursive: true});
+
+  const urls = [];
+  result.forEach(r => {
+    urls.push(JSON.stringify({
+      url: `https://ipfs.io/ipfs/${r.hash}`,
+      name: r.path.split('.png')[0],
+    }, null, 4));
+  });
+  const data = JSON.stringify({ text: urls.join('\n') }, null, 4);
+  await request.post(webhookUrl).send(data);
+}
+
 (async () => {
   if (!fs.existsSync('output/')) {
     fs.mkdirSync('output/');
@@ -152,9 +174,10 @@ const setupDriver = (event) => {
     url: 'https://commonwealth.im',
     webhookUrl: process.env.WEBHOOK_URL,
   };
-  IPFS = ipfsClient('/ip4/127.0.0.1/tcp/5001');
   const driver = setupDriver(event);
   driver.get(event.url);
-  await runThroughFlows(event, driver);
+  // await runThroughFlows(event, driver);
+  await uploadPicsToIpfs(event.webhookUrl);
   driver.quit();
+  process.exit(0);
 })();
