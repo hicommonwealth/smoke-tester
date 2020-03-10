@@ -157,10 +157,10 @@ const uploadPicsToIpfs = async (webhookUrl) => {
 
   const urls = [];
   result.forEach(r => {
-    urls.push(JSON.stringify({
-      url: `https://ipfs.io/ipfs/${r.hash}`,
-      name: r.path.split('.png')[0],
-    }, null, 4));
+    urls.push([
+      `https://ipfs.io/ipfs/${r.hash}`,
+      r.path.split('.png')[0],
+    ].join(' - '));
   });
   const data = JSON.stringify({ text: urls.join('\n') }, null, 4);
   await request.post(webhookUrl).send(data);
