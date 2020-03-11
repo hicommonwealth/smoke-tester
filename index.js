@@ -7,7 +7,6 @@ const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const chromedriver = require('chromedriver');
 const ipfsClient = require('ipfs-http-client');
-const multihashes = require('multihashes');
 
 const getAllCommunities = async (driver) => {
   try {
@@ -115,7 +114,6 @@ const runThroughFlows = async (event, driver, identifier) => {
 };
 
 const setupDriver = (event) => {
-  chrome.setDefaultService(new chrome.ServiceBuilder(chromedriver.path).build());
   const builder = new webdriver.Builder();
   const chromeOptions = new chrome.Options();
   const defaultChromeFlags = [
