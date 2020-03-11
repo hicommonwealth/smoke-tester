@@ -114,6 +114,7 @@ const runThroughFlows = async (event, driver, identifier) => {
 };
 
 const setupDriver = (event) => {
+  chrome.setDefaultService(new chrome.ServiceBuilder(chromedriver.path).build());
   const builder = new webdriver.Builder();
   const chromeOptions = new chrome.Options();
   const defaultChromeFlags = [
