@@ -6,6 +6,7 @@ const request = require('superagent');
 const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const ipfsClient = require('ipfs-http-client');
+const cron = require('node-cron');
 
 const getAllCommunities = async (driver) => {
   try {
@@ -163,7 +164,7 @@ const uploadPicsToIpfs = async (webhookUrl) => {
   await request.post(webhookUrl).send(data);
 }
 
-(async () => {
+const runSmokeTest = async () => {
   if (!fs.existsSync('output/')) {
     fs.mkdirSync('output/');
   }
@@ -176,5 +177,9 @@ const uploadPicsToIpfs = async (webhookUrl) => {
   await runThroughFlows(event, driver);
   await uploadPicsToIpfs(event.webhookUrl);
   driver.quit();
-  process.exit(0);
-})();
+}
+
+cron.schedule('0 */3 * * *', async () => {
+  console.log(`Running smoke test at ${new Date(Date.now()).toTimeString()}`);
+  await runSmokeTest();
+});
