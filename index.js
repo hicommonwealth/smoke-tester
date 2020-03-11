@@ -5,7 +5,6 @@ const fs = require('fs');
 const request = require('superagent');
 const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
-const chromedriver = require('chromedriver');
 const ipfsClient = require('ipfs-http-client');
 
 const getAllCommunities = async (driver) => {
@@ -114,8 +113,7 @@ const runThroughFlows = async (event, driver, identifier) => {
 };
 
 const setupDriver = (event) => {
-  chrome.setDefaultService(new chrome.ServiceBuilder(chromedriver.path).build());
-  const builder = new webdriver.Builder();
+  const builder = new webdriver.Builder().forBrowser('chrome');
   const chromeOptions = new chrome.Options();
   const defaultChromeFlags = [
     '--headless',
