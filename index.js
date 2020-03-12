@@ -64,6 +64,8 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
     for (let index = 0; index < headerElts.length; index++) {
       const element = headerElts[index];
       const text = await element.getText();
+
+      const webhookOutput = [];
       if (visited.indexOf(text) === -1) {
         console.log(`Clicking ${text} of ${communityTitle}`);
         visited.push(text);
@@ -84,11 +86,13 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
           }
           const image = await driver.takeScreenshot();
           fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
+          webhookOutput.push(`✅ Automated test succeeded for ${communityTitle}: ${text}`);
         } catch (e) {
-          postToWebhook(`Failed to click into ${text} for ${communityTitle}\n${e.message}`);
+          webhookOutput.push(`❌ Automated test failed for ${communityTitle}: ${text} \n ${e.message}`);
         }
         break;
       }
+      postToWebhook(webhookOutput.join('\n'));
 
       await clickIntoCommunity(driver, communityText);
       headerElts = await driver.findElements(webdriver.By.className('NavigationItem undefined'));
@@ -158,23 +162,27 @@ const setupDriver = (event) => {
 
 const uploadPicsToIpfs = async (webhookUrl) => {
   console.log('Uploading screenshots to IPFS');
-  const ipfs = ipfsClient('/ip4/127.0.0.1/tcp/5001');
-  const pics = fs.readdirSync('output');
-  const files = pics.map((p) => ({
-    path: p,
-    content: fs.readFileSync(`output/${p}`),
-  }));
+  try {
+    const ipfs = ipfsClient('/ip4/127.0.0.1/tcp/5001');
+    const pics = fs.readdirSync('output');
+    const files = pics.map((p) => ({
+      path: p,
+      content: fs.readFileSync(`output/${p}`),
+    }));
 
-  const result = await ipfs.add(files, { recursive: true});
+    const result = await ipfs.add(files, { recursive: true});
 
-  const urls = [];
-  result.forEach(r => {
-    urls.push([
-      `https://ipfs.io/ipfs/${r.hash}`,
-      r.path.split('.png')[0],
-    ].join(' - '));
-  });
-  postToWebhook(urls.join('\n'));
+    const urls = [];
+    result.forEach(r => {
+      urls.push([
+        `https://ipfs.io/ipfs/${r.hash}`,
+        r.path.split('.png')[0],
+      ].join(' - '));
+    });
+    postToWebhook(urls.join('\n'));
+  } catch (e) {
+    postToWebhook('No IPFS client available - results will not be posted');
+  }
 }
 
 const runSmokeTest = async () => {

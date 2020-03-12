@@ -17,6 +17,14 @@ Move it into your PATH (e.g. into this directory). Then, run:
 yarn install
 ```
 
+(Optional) Install and run an IPFS client in the background, so the smoke tests can post screenshots:
+
+```
+sudo snap install ipfs
+ipfs --daemon &
+```
+
+
 ### Usage
 
 To run the smoke tests:
