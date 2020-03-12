@@ -65,7 +65,6 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
       const element = headerElts[index];
       const text = await element.getText();
 
-      const webhookOutput = [];
       if (visited.indexOf(text) === -1) {
         console.log(`Clicking ${text} of ${communityTitle}`);
         visited.push(text);
@@ -86,13 +85,12 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
           }
           const image = await driver.takeScreenshot();
           fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
-          webhookOutput.push(`✅ Automated test succeeded for ${communityTitle}: ${text}`);
+          postToWebhook(`✅ Automated test succeeded for ${communityTitle}: ${text}`);
         } catch (e) {
-          webhookOutput.push(`❌ Automated test failed for ${communityTitle}: ${text} \n ${e.message}`);
+          postToWebhook(`❌ Automated test failed for ${communityTitle}: ${text} \n ${e.message}`);
         }
         break;
       }
-      postToWebhook(webhookOutput.join('\n'));
 
       await clickIntoCommunity(driver, communityText);
       headerElts = await driver.findElements(webdriver.By.className('NavigationItem undefined'));
