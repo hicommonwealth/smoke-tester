@@ -6,6 +6,7 @@
   "dependencies": {
     "aws-sdk": "^2.637.0",
     "chrome-aws-lambda": "^2.1.1",
+    "dotenv": "^8.2.0",
     "ipfs-http-client": "^38.0.0",
     "multihashes": "^0.4.15",
     "node-cron": "^2.0.3",

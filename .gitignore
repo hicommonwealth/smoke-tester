@@ -1,6 +1,7 @@
 .DS_STORE
 output
 node_modules
+.env
 
 chromedriver
 err.txt

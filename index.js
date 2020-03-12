@@ -1,6 +1,7 @@
 /* eslint-disable no-return-await */
 /* eslint-disable global-require */
 /* eslint-disable no-await-in-loop */
+require('dotenv').config();
 const fs = require('fs');
 const request = require('superagent');
 const webdriver = require('selenium-webdriver');
@@ -9,6 +10,13 @@ const ipfsClient = require('ipfs-http-client');
 const cron = require('node-cron');
 
 const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
+
+const postToWebhook = async (message) => {
+  const data = JSON.stringify({ text: message });
+  return request.post(process.env.WEBHOOK_URL)
+    .set('Content-Type', 'application/json')
+    .send(data);
+};
 
 const getAllCommunities = async (driver) => {
   console.log('Starting getAllCommunities');
@@ -77,9 +85,7 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
           const image = await driver.takeScreenshot();
           fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
         } catch (e) {
-          const msg = `Failed to click into ${text} for ${communityTitle}\n${e.message}`;
-          const data = JSON.stringify({ text: msg });
-          await request.post(webhookUrl).send(data);
+          postToWebhook(`Failed to click into ${text} for ${communityTitle}\n${e.message}`);
         }
         break;
       }
@@ -168,8 +174,7 @@ const uploadPicsToIpfs = async (webhookUrl) => {
       r.path.split('.png')[0],
     ].join(' - '));
   });
-  const data = JSON.stringify({ text: urls.join('\n') }, null, 4);
-  await request.post(webhookUrl).send(data);
+  postToWebhook(urls.join('\n'));
 }
 
 const runSmokeTest = async () => {
