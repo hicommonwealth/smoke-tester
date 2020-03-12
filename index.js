@@ -8,7 +8,10 @@ const chrome = require('selenium-webdriver/chrome');
 const ipfsClient = require('ipfs-http-client');
 const cron = require('node-cron');
 
+const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
+
 const getAllCommunities = async (driver) => {
+  console.log('Starting getAllCommunities');
   try {
     const community = await driver.findElements(webdriver.By.className('communities'));
     const elts = await community[0].findElements(webdriver.By.className('home-card'));
@@ -24,6 +27,7 @@ const getAllCommunities = async (driver) => {
 };
 
 const clickIntoCommunity = async (driver, identifyingText) => {
+  console.log('Starting clickIntoCommunity:', identifyingText);
   try {
     const homeElt = (await driver.findElements(webdriver.By.className('header-logo')))[0];
     await homeElt.click();
@@ -44,6 +48,7 @@ const clickIntoCommunity = async (driver, identifyingText) => {
 };
 
 const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
+  console.log('Starting clickThroughNavItems:', communityText);
   const communityTitle = communityText.split('\n')[0];
   let headerElts = await driver.findElements(webdriver.By.className('NavigationItem undefined'));
   const visited = [];
@@ -86,6 +91,7 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
 };
 
 const runThroughFlows = async (event, driver, identifier) => {
+  console.log('Starting runThroughFlows:', identifier);
   const { elts, eltDetails } = await getAllCommunities(driver);
   let eelts = elts;
   const seenText = [];
@@ -114,6 +120,7 @@ const runThroughFlows = async (event, driver, identifier) => {
 };
 
 const setupDriver = (event) => {
+  console.log('Setting up headless browser driver');
   const builder = new webdriver.Builder().forBrowser('chrome');
   const chromeOptions = new chrome.Options();
   const defaultChromeFlags = [
@@ -144,6 +151,7 @@ const setupDriver = (event) => {
 };
 
 const uploadPicsToIpfs = async (webhookUrl) => {
+  console.log('Uploading screenshots to IPFS');
   const ipfs = ipfsClient('/ip4/127.0.0.1/tcp/5001');
   const pics = fs.readdirSync('output');
   const files = pics.map((p) => ({
@@ -165,6 +173,7 @@ const uploadPicsToIpfs = async (webhookUrl) => {
 }
 
 const runSmokeTest = async () => {
+  console.log('Running smoke tests');
   if (!fs.existsSync('output/')) {
     fs.mkdirSync('output/');
   }
@@ -173,13 +182,20 @@ const runSmokeTest = async () => {
     webhookUrl: process.env.WEBHOOK_URL,
   };
   const driver = setupDriver(event);
+  console.log('Driver setup complete. Starting headless browser now');
   driver.get(event.url);
   await runThroughFlows(event, driver);
   await uploadPicsToIpfs(event.webhookUrl);
   driver.quit();
 }
 
-cron.schedule('0 */3 * * *', async () => {
-  console.log(`Running smoke test at ${new Date(Date.now()).toTimeString()}`);
-  await runSmokeTest();
-});
+if (SCHEDULE_CRON) {
+  console.log('Scheduling smoke tests...');
+  cron.schedule('0 */3 * * *', async () => {
+    console.log(`Running smoke test at ${new Date(Date.now()).toTimeString()}`);
+    await runSmokeTest();
+  });
+} else {
+  console.log('Running smoke tests now...');
+  runSmokeTest();
+}

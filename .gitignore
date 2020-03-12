@@ -1,3 +1,7 @@
 .DS_STORE
 output
 node_modules
+
+chromedriver
+err.txt
+out.txt
