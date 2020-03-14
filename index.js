@@ -143,7 +143,6 @@ const setupDriver = (event) => {
     '--disk-cache-dir=/tmp/cache-dir',
     '--user-data-dir=/tmp/user-data',
     '--hide-scrollbars',
-    '--enable-logging',
     '--log-level=0',
     '--v=99',
     '--ignore-certificate-errors',
