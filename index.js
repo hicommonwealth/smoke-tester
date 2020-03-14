@@ -197,7 +197,9 @@ const runSmokeTest = async () => {
   driver.get(event.url);
   await runThroughFlows(event, driver);
   await uploadPicsToIpfs(event.webhookUrl);
+  driver.close();
   driver.quit();
+  console.log('Driver quit, all done');
 }
 
 if (SCHEDULE_CRON) {
