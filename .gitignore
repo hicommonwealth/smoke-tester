@@ -3,6 +3,10 @@ output
 node_modules
 .env
 
+# Used for cron
+output.log
+
+# Used for webdriver
 chromedriver
 err.txt
 out.txt
