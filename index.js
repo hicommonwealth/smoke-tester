@@ -9,6 +9,13 @@ const chrome = require('selenium-webdriver/chrome');
 const ipfsClient = require('ipfs-http-client');
 const cron = require('node-cron');
 
+const { ApiPromise, WsProvider } = require('@polkadot/api');
+const { bnToBn } = require('@polkadot/util/bn');
+const { u128 } = require('@polkadot/types');
+const { IdentityTypes } = require('edgeware-node-types/dist/identity');
+const { SignalingTypes } = require('edgeware-node-types/dist/signaling');
+const { VotingTypes } = require('edgeware-node-types/dist/voting');
+
 const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
 
 const postToWebhook = async (message) => {
@@ -182,8 +189,92 @@ const uploadPicsToIpfs = async (webhookUrl) => {
   }
 }
 
+const runAPITest = async (nodeUrl) => {
+  return new Promise(async (resolve, reject) => {
+    console.log(`Connecting to API for ${nodeUrl}...`);
+    let connected;
+    setTimeout(() => {
+      if (connected) return;
+      reject();
+    }, 5000);
+
+    // initialize the api
+    const api = await ApiPromise.create({
+      provider: new WsProvider(nodeUrl),
+      types: {
+        ...IdentityTypes,
+        ...SignalingTypes,
+        ...VotingTypes,
+        Balance2: u128,
+      },
+    });
+    connected = true;
+
+    //
+    // get relevant chain data
+    //
+    try {
+      const [issuance, properties, block] = await Promise.all([
+        api.query.balances.totalIssuance(),
+        api.rpc.system.properties(),
+      ]);
+      const tokenDecimals = properties.tokenDecimals.unwrap().toString(10);
+      const issuanceStr = issuance.div(bnToBn(10).pow(bnToBn(tokenDecimals))).toString(10);
+      resolve();
+    } catch (e) {
+      reject();
+    }
+  });
+}
+
 const runSmokeTest = async () => {
-  console.log('Running smoke tests');
+  console.log('Running API smoke tests');
+
+  const req = await request.get('https://edgeware-supply.now.sh/');
+  const supplyIsValid = parseInt(req.text, 10).toString() === req.text;
+  if (supplyIsValid) {
+    console.log('Success running edgeware-supply test');
+    postToWebhook(`✅ Edgeware supply endpoint returns valid result: ${req.text}`);
+  } else {
+    console.log('Failure running edgeware-supply test');
+    postToWebhook(`❌ Edgeware supply endpoint returns invalid result: ${req.text}`);
+  }
+
+  const apiNodes = [
+    'ws://mainnet1.edgewa.re:9944',
+    'ws://mainnet2.edgewa.re:9944',
+    'ws://mainnet3.edgewa.re:9944',
+    'ws://mainnet4.edgewa.re:9944',
+    'ws://mainnet5.edgewa.re:9944',
+    'ws://mainnet6.edgewa.re:9944',
+    'ws://mainnet7.edgewa.re:9944',
+    'ws://mainnet8.edgewa.re:9944',
+    'ws://mainnet9.edgewa.re:9944',
+    'ws://mainnet10.edgewa.re:9944',
+    'ws://mainnet11.edgewa.re:9944',
+    'ws://mainnet12.edgewa.re:9944',
+    'ws://mainnet13.edgewa.re:9944',
+    'ws://mainnet14.edgewa.re:9944',
+    'ws://mainnet15.edgewa.re:9944',
+    'ws://mainnet16.edgewa.re:9944',
+    'ws://mainnet17.edgewa.re:9944',
+    'ws://mainnet18.edgewa.re:9944',
+    'ws://mainnet19.edgewa.re:9944',
+    'ws://mainnet20.edgewa.re:9944',
+  ];
+
+  for (nodeUrl of apiNodes) {
+    try {
+      await runAPITest(nodeUrl);
+      console.log('Success running API tests:', nodeUrl);
+      postToWebhook(`✅ Polkadot API connection test succeeded for ${nodeUrl}`);
+    } catch (e) {
+      console.log('Failure running API tests:', nodeUrl);
+      postToWebhook(`❌ Polkadot API connection test succeeded for ${nodeUrl}`);
+    }
+  }
+
+  console.log('Running UI smoke tests');
   if (!fs.existsSync('output/')) {
     fs.mkdirSync('output/');
   }
