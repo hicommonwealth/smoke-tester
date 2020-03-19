@@ -19,10 +19,14 @@ const { VotingTypes } = require('edgeware-node-types/dist/voting');
 const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
 
 const postToWebhook = async (message) => {
-  const data = JSON.stringify({ text: message });
-  return request.post(process.env.WEBHOOK_URL)
-    .set('Content-Type', 'application/json')
-    .send(data);
+  if (process.env.WEBHOOK_URL) {
+    const data = JSON.stringify({ text: message });
+    return request.post(process.env.WEBHOOK_URL)
+      .set('Content-Type', 'application/json')
+      .send(data);
+  } else {
+    return;
+  }
 };
 
 const getAllCommunities = async (driver) => {
