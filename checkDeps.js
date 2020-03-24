@@ -3,13 +3,19 @@ const ncu = require('npm-check-updates');
 const smoker = require('./');
 
 const checkDependencies = async () => {
+  const pkg = fs.readFileSync(`${__dirname}/../commonwealth/package.json`, 'utf-8');
+  const parsedPkg = JSON.parse(pkg);
   const upgraded = await ncu.run({
+    pre: 1,
     jsonUpgraded: true,
     packageManager: 'npm',
-    silent: true,
-    packageData: fs.readFileSync(`${__dirname}/../commonwealth/package.json`, 'utf-8')
+    packageData: pkg
   });
-  var filtered = Object.fromEntries(Object.entries(upgraded).filter(([k,v]) => k.includes('polkadot')));
+  var filtered = Object.fromEntries(
+    Object.entries(upgraded)
+      .filter(([k,v]) => k.includes('polkadot'))
+      .map(([k,v]) => ([k, `${parsedPkg['dependencies'][k]} --> ${v}`]))
+  )
   console.log('Polkadot dependencies to upgrade', filtered);
   await smoker.postToWebhook(`\`\`\`Polkadot dependencies to upgrade ${JSON.stringify(filtered, null, 4)}\`\`\``);
 };
