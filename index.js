@@ -16,6 +16,8 @@ const { IdentityTypes } = require('edgeware-node-types/dist/identity');
 const { SignalingTypes } = require('edgeware-node-types/dist/signaling');
 const { VotingTypes } = require('edgeware-node-types/dist/voting');
 
+const checkDepedencies = require('./checkDeps');
+
 const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
 
 const postToWebhook = async (message) => {
@@ -28,6 +30,7 @@ const postToWebhook = async (message) => {
     return;
   }
 };
+module.exports.postToWebhook = postToWebhook;
 
 const getAllCommunities = async (driver) => {
   console.log('Starting getAllCommunities');
@@ -293,7 +296,10 @@ const runSmokeTest = async () => {
   await uploadPicsToIpfs(event.webhookUrl);
   driver.close();
   driver.quit();
-  console.log('Driver quit, all done');
+  console.log('Driver quit, all done\n');
+
+  console.log('Checking for dependency updates');
+  await checkDepedencies();
 }
 
 if (SCHEDULE_CRON) {
