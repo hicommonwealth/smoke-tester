@@ -18,6 +18,7 @@ const checkDependencies = async () => {
   )
   console.log('Polkadot dependencies to upgrade', filtered);
   await smoker.postToWebhook(`\`\`\`Polkadot dependencies to upgrade ${JSON.stringify(filtered, null, 4)}\`\`\``);
+  process.exit(0)
 };
 
 module.exports = checkDependencies;
