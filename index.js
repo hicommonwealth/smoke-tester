@@ -235,68 +235,68 @@ const runAPITest = async (nodeUrl) => {
 }
 
 const runSmokeTest = async () => {
-  // console.log('Running API smoke tests');
+  console.log('Running API smoke tests');
 
-  // const req = await request.get('https://edgeware-supply.now.sh/');
-  // const supplyIsValid = parseInt(req.text, 10).toString() === req.text;
-  // if (supplyIsValid) {
-  //   console.log('Success running edgeware-supply test');
-  //   postToWebhook(`✅ Edgeware supply endpoint returns valid result: ${req.text}`);
-  // } else {
-  //   console.log('Failure running edgeware-supply test');
-  //   postToWebhook(`❌ Edgeware supply endpoint returns invalid result: ${req.text}`);
-  // }
+  const req = await request.get('https://edgeware-supply.now.sh/');
+  const supplyIsValid = parseInt(req.text, 10).toString() === req.text;
+  if (supplyIsValid) {
+    console.log('Success running edgeware-supply test');
+    postToWebhook(`✅ Edgeware supply endpoint returns valid result: ${req.text}`);
+  } else {
+    console.log('Failure running edgeware-supply test');
+    postToWebhook(`❌ Edgeware supply endpoint returns invalid result: ${req.text}`);
+  }
 
-  // const apiNodes = [
-  //   'ws://mainnet1.edgewa.re:9944',
-  //   'ws://mainnet2.edgewa.re:9944',
-  //   'ws://mainnet3.edgewa.re:9944',
-  //   'ws://mainnet4.edgewa.re:9944',
-  //   'ws://mainnet5.edgewa.re:9944',
-  //   'ws://mainnet6.edgewa.re:9944',
-  //   'ws://mainnet7.edgewa.re:9944',
-  //   'ws://mainnet8.edgewa.re:9944',
-  //   'ws://mainnet9.edgewa.re:9944',
-  //   'ws://mainnet10.edgewa.re:9944',
-  //   'ws://mainnet11.edgewa.re:9944',
-  //   'ws://mainnet12.edgewa.re:9944',
-  //   'ws://mainnet13.edgewa.re:9944',
-  //   'ws://mainnet14.edgewa.re:9944',
-  //   'ws://mainnet15.edgewa.re:9944',
-  //   'ws://mainnet16.edgewa.re:9944',
-  //   'ws://mainnet17.edgewa.re:9944',
-  //   'ws://mainnet18.edgewa.re:9944',
-  //   'ws://mainnet19.edgewa.re:9944',
-  //   'ws://mainnet20.edgewa.re:9944',
-  // ];
+  const apiNodes = [
+    'ws://mainnet1.edgewa.re:9944',
+    'ws://mainnet2.edgewa.re:9944',
+    'ws://mainnet3.edgewa.re:9944',
+    'ws://mainnet4.edgewa.re:9944',
+    'ws://mainnet5.edgewa.re:9944',
+    'ws://mainnet6.edgewa.re:9944',
+    'ws://mainnet7.edgewa.re:9944',
+    'ws://mainnet8.edgewa.re:9944',
+    'ws://mainnet9.edgewa.re:9944',
+    'ws://mainnet10.edgewa.re:9944',
+    'ws://mainnet11.edgewa.re:9944',
+    'ws://mainnet12.edgewa.re:9944',
+    'ws://mainnet13.edgewa.re:9944',
+    'ws://mainnet14.edgewa.re:9944',
+    'ws://mainnet15.edgewa.re:9944',
+    'ws://mainnet16.edgewa.re:9944',
+    'ws://mainnet17.edgewa.re:9944',
+    'ws://mainnet18.edgewa.re:9944',
+    'ws://mainnet19.edgewa.re:9944',
+    'ws://mainnet20.edgewa.re:9944',
+  ];
 
-  // for (nodeUrl of apiNodes) {
-  //   try {
-  //     await runAPITest(nodeUrl);
-  //     console.log('Success running API tests:', nodeUrl);
-  //     postToWebhook(`✅ Polkadot API connection test succeeded for ${nodeUrl}`);
-  //   } catch (e) {
-  //     console.log('Failure running API tests:', nodeUrl);
-  //     postToWebhook(`❌ Polkadot API connection test succeeded for ${nodeUrl}`);
-  //   }
-  // }
+  for (nodeUrl of apiNodes) {
+    try {
+      await runAPITest(nodeUrl);
+      console.log('Success running API tests:', nodeUrl);
+      postToWebhook(`✅ Polkadot API connection test succeeded for ${nodeUrl}`);
+    } catch (e) {
+      console.log('Failure running API tests:', nodeUrl);
+      postToWebhook(`❌ Polkadot API connection test succeeded for ${nodeUrl}`);
+    }
+  }
 
-  // console.log('Running UI smoke tests');
-  // if (!fs.existsSync('output/')) {
-  //   fs.mkdirSync('output/');
-  // }
-  // const event = {
-  //   url: 'https://commonwealth.im',
-  //   webhookUrl: process.env.WEBHOOK_URL,
-  // };
-  // const driver = setupDriver(event);
-  // console.log('Driver setup complete. Starting headless browser now');
-  // driver.get(event.url);
-  // await runThroughFlows(event, driver);
-  // await uploadPicsToIpfs(event.webhookUrl);
-  // driver.close();
-  // driver.quit();
-  // console.log('Driver quit, all done\n');
+  console.log('Running UI smoke tests');
+  if (!fs.existsSync('output/')) {
+    fs.mkdirSync('output/');
+  }
+  const event = {
+    url: 'https://commonwealth.im',
+    webhookUrl: process.env.WEBHOOK_URL,
+  };
+  const driver = setupDriver(event);
+  console.log('Driver setup complete. Starting headless browser now');
+  driver.get(event.url);
+  await runThroughFlows(event, driver);
+  await uploadPicsToIpfs(event.webhookUrl);
+  driver.close();
+  driver.quit();
+  console.log('Driver quit, all done\n');
 
   console.log('Checking for dependency updates');
   await checkDepedencies();
