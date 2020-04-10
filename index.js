@@ -86,9 +86,9 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
         try {
           if (text.toLowerCase().indexOf('council') !== -1) {
             await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), 5000);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CouncilCandidate')), 5000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CollectiveMember')), 5000);
           } else if (text.toLowerCase().indexOf('proposal') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('proposals-subheader')), 5000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('proposals-subheader')), 10000);
             await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ProposalRow')), 5000);
           } else if (text.toLowerCase().indexOf('discussions') !== -1) {
             await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), 5000);
@@ -101,6 +101,7 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
           fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
           postToWebhook(`✅ Automated test succeeded for ${communityTitle}: ${text}`);
         } catch (e) {
+          console.log(`Test failed for ${communityTitle}: ${text} \n ${e.message}`);
           postToWebhook(`❌ Automated test failed for ${communityTitle}: ${text} \n ${e.message}`);
         }
         break;
