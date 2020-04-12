@@ -85,8 +85,8 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
         await element.click();
         try {
           if (text.toLowerCase().indexOf('council') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), 5000);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CollectiveMember')), 5000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), 15000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CollectiveMember')), 15000);
           } else if (text.toLowerCase().indexOf('proposal') !== -1) {
             await driver.wait(webdriver.until.elementLocated(webdriver.By.className('proposals-subheader')), 10000);
             await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ProposalRow')), 5000);
