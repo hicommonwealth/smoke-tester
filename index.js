@@ -197,24 +197,19 @@ const uploadPicsToIpfs = async (webhookUrl) => {
   }
 }
 
-const runAPITest = async (nodeUrl) => {
+const runAPITest = async (nodeUrl, types) => {
   return new Promise(async (resolve, reject) => {
     console.log(`Connecting to API for ${nodeUrl}...`);
     let connected;
     setTimeout(() => {
       if (connected) return;
-      reject();
-    }, 5000);
+      reject(new Error('API connection timeout'));
+    }, 10000);
 
     // initialize the api
     const api = await ApiPromise.create({
       provider: new WsProvider(nodeUrl),
-      types: {
-        ...IdentityTypes,
-        ...SignalingTypes,
-        ...VotingTypes,
-        Balance2: u128,
-      },
+      types,
     });
     connected = true;
 
@@ -230,7 +225,7 @@ const runAPITest = async (nodeUrl) => {
       const issuanceStr = issuance.div(bnToBn(10).pow(bnToBn(tokenDecimals))).toString(10);
       resolve();
     } catch (e) {
-      reject();
+      reject(e);
     }
   });
 }
@@ -248,36 +243,48 @@ const runSmokeTest = async () => {
     postToWebhook(`❌ Edgeware supply endpoint returns invalid result: ${req.text}`);
   }
 
-  const apiNodes = [
-    'ws://mainnet1.edgewa.re:9944',
-    'ws://mainnet2.edgewa.re:9944',
-    'ws://mainnet3.edgewa.re:9944',
-    'ws://mainnet4.edgewa.re:9944',
-    'ws://mainnet5.edgewa.re:9944',
-    'ws://mainnet6.edgewa.re:9944',
-    'ws://mainnet7.edgewa.re:9944',
-    'ws://mainnet8.edgewa.re:9944',
-    'ws://mainnet9.edgewa.re:9944',
-    'ws://mainnet10.edgewa.re:9944',
-    'ws://mainnet11.edgewa.re:9944',
-    'ws://mainnet12.edgewa.re:9944',
-    'ws://mainnet13.edgewa.re:9944',
-    'ws://mainnet14.edgewa.re:9944',
-    'ws://mainnet15.edgewa.re:9944',
-    'ws://mainnet16.edgewa.re:9944',
-    'ws://mainnet17.edgewa.re:9944',
-    'ws://mainnet18.edgewa.re:9944',
-    'ws://mainnet19.edgewa.re:9944',
-    'ws://mainnet20.edgewa.re:9944',
+  const nodes = [
+    [ 'edgeware', 'ws://mainnet1.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet2.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet3.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet4.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet5.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet6.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet7.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet8.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet9.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet10.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet11.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet12.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet13.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet14.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet15.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet16.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet17.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet18.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet19.edgewa.re:9944', ],
+    [ 'edgeware', 'ws://mainnet20.edgewa.re:9944', ],
+    [ 'kusama', 'wss://kusama-rpc.polkadot.io' ],
+    [ 'polkadot', 'wss://rpc.polkadot.io' ],
   ];
 
-  for (nodeUrl of apiNodes) {
+  for ([ chain, nodeUrl ] of nodes) {
     try {
-      await runAPITest(nodeUrl);
+      let types = {};
+      if (chain === 'edgeware') {
+        types = {
+          ...IdentityTypes,
+          ...SignalingTypes,
+          ...VotingTypes,
+          Balance2: u128,
+        };
+      }
+      await runAPITest(nodeUrl, types);
       console.log('Success running API tests:', nodeUrl);
       postToWebhook(`✅ Polkadot API connection test succeeded for ${nodeUrl}`);
     } catch (e) {
       console.log('Failure running API tests:', nodeUrl);
+      console.log('Error: ', e.message);
       postToWebhook(`❌ Polkadot API connection test succeeded for ${nodeUrl}`);
     }
   }
