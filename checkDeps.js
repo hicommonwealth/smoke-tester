@@ -16,7 +16,6 @@ const checkDependencies = async () => {
       .filter(([k,v]) => k.includes('polkadot'))
       .map(([k,v]) => ([k, `${parsedPkg['dependencies'][k]} --> ${v}`]))
   )
-  console.log('Polkadot dependencies to upgrade', filtered);
   await smoker.postToWebhook(`\`\`\`Polkadot dependencies to upgrade ${JSON.stringify(filtered, null, 4)}\`\`\``);
   process.exit(0)
 };

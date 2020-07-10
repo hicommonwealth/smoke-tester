@@ -8,6 +8,7 @@ const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const ipfsClient = require('ipfs-http-client');
 const cron = require('node-cron');
+const { performance } = require('perf_hooks');
 
 const { ApiPromise, WsProvider } = require('@polkadot/api');
 const { bnToBn } = require('@polkadot/util/bn');
@@ -21,6 +22,7 @@ const checkDepedencies = require('./checkDeps');
 const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
 
 const postToWebhook = async (message) => {
+  console.log(`POST: ${message}`);
   if (process.env.WEBHOOK_URL) {
     const data = JSON.stringify({ text: message });
     return request.post(process.env.WEBHOOK_URL)
@@ -101,7 +103,6 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
           fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
           postToWebhook(`✅ Automated test succeeded for ${communityTitle}: ${text}`);
         } catch (e) {
-          console.log(`Test failed for ${communityTitle}: ${text} \n ${e.message}`);
           postToWebhook(`❌ Automated test failed for ${communityTitle}: ${text} \n ${e.message}`);
         }
         break;
@@ -236,10 +237,8 @@ const runSmokeTest = async () => {
   const req = await request.get('https://edgeware-supply.now.sh/');
   const supplyIsValid = parseInt(req.text, 10).toString() === req.text;
   if (supplyIsValid) {
-    console.log('Success running edgeware-supply test');
     postToWebhook(`✅ Edgeware supply endpoint returns valid result: ${req.text}`);
   } else {
-    console.log('Failure running edgeware-supply test');
     postToWebhook(`❌ Edgeware supply endpoint returns invalid result: ${req.text}`);
   }
 
@@ -279,13 +278,16 @@ const runSmokeTest = async () => {
           Balance2: u128,
         };
       }
+
+      const tStart = performance.now();
       await runAPITest(nodeUrl, types);
-      console.log('Success running API tests:', nodeUrl);
-      postToWebhook(`✅ Polkadot API connection test succeeded for ${nodeUrl}`);
+      const tEnd = performance.now();
+      const tMs = (tEnd - tStart);
+      // TODO: send this out to metrics/instrumentation
+
+      postToWebhook(`✅ Polkadot API connection test succeeded for ${nodeUrl} in ${tMs}ms.`);
     } catch (e) {
-      console.log('Failure running API tests:', nodeUrl);
-      console.log('Error: ', e.message);
-      postToWebhook(`❌ Polkadot API connection test succeeded for ${nodeUrl}`);
+      postToWebhook(`❌ Polkadot API connection test failed for ${nodeUrl}: ${e.message}.`);
     }
   }
 
