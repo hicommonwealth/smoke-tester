@@ -23,13 +23,13 @@ Logger.useDefaults({
 
 const runSmokeTest = async () => {
   if (ARGS.some((a) => ['api', 'ui', 'deps'].includes(a))) {
-    if (args.includes('api')) {
+    if (ARGS.includes('api')) {
       await testApi();
     }
-    if (args.includes('ui')) {
+    if (ARGS.includes('ui')) {
       await testUi();
     }
-    if (args.includes('deps')) {
+    if (ARGS.includes('deps')) {
       await checkDepedencies();
     }
   } else {

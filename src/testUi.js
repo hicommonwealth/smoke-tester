@@ -36,19 +36,19 @@ const clickIntoCommunity = async (driver, identifyingText) => {
     const text = await element.getText();
     if (text === identifyingText) {
       Logger.debug('Clicking:', community);
-      const clickTime = performance.now();
+      const preClick = performance.now();
       await element.click();
       await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
-      const loadTime = performance.now();
-      return loadTime - clickTime;
+      const postLoad = performance.now();
+      return postLoad - preClick;
     }
   }
   throw new Error('Failed to locate community:', community);
 };
 
 const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
-  const communityTitle = communityText.split('\n')[0];
-  Logger.debug('Starting clickThroughNavItems:', communityTitle);
+  const community = communityText.split('\n')[0];
+  Logger.debug('Starting clickThroughNavItems:', community);
   let headerElts = await driver.findElements(webdriver.By.className('NavigationItem undefined'));
   const visited = [];
   while (visited.length < headerElts.length) {
@@ -57,8 +57,9 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
       const text = await element.getText();
 
       if (visited.indexOf(text) === -1) {
-        Logger.debug(`Clicking ${text} of ${communityTitle}`);
+        Logger.debug(`Clicking ${text} of ${community}`);
         visited.push(text);
+        const preClick = performance.now();
         await element.click();
         if (text.toLowerCase().indexOf('council') !== -1) {
           await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), DRIVER_TIMEOUT);
@@ -73,8 +74,16 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
           await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ValidatorRow')), DRIVER_TIMEOUT);
           await driver.wait(webdriver.until.elementLocated(webdriver.By.className('val-action')), DRIVER_TIMEOUT);
         }
+
+        // emit timestamp, screenshot
+        const postLoad = performance.now();
+        const loadTime = postLoad - preClick;
+        // do not timestamp discussions, we emit at first page load
+        if (text.toLowerCase().indexOf('discussions') === -1) {
+          postToWebhook(`⏰ Load time for ${community} ${text.toLowerCase()}: ${loadTime.toFixed(2)}ms.`);
+        }
         const image = await driver.takeScreenshot();
-        fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
+        fs.writeFileSync(`output/${community}-2-${text.toLowerCase()}.png`, image, 'base64');
         break;
       }
 
@@ -93,10 +102,9 @@ const runThroughFlows = async (event, driver, identifier) => {
   for (const text of texts) {
     const community = text.split('\n')[0];
     try {
-      // first navigate to discussion page and screenshot it
+      // first navigate to discussion page, emit timestamp, screenshot
       const loadTime = await clickIntoCommunity(driver, text);
       postToWebhook(`⏰ Load time for ${community} discussions: ${loadTime.toFixed(2)}ms.`);
-
       const image = await driver.takeScreenshot();
       fs.writeFileSync(`output/${community}-1-homepage.png`, image, 'base64');
 
