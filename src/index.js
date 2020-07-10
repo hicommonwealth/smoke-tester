@@ -3,16 +3,26 @@
 /* eslint-disable no-await-in-loop */
 require('dotenv').config();
 const cron = require('node-cron');
+const Logger = require('js-logger');
+
 const testApi = require('./testApi');
 const testUi = require('./testUi');
 const checkDepedencies = require('./checkDeps');
 
 const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
 
+const ARGS = process.argv.slice(2);
+
+// set up logging globally
+Logger.useDefaults({
+  defaultLevel: ARGS.includes('-v') ? Logger.DEBUG : Logger.INFO,
+  formatter: function (messages, context) {
+      messages.unshift(new Date().toISOString())
+  }
+})
+
 const runSmokeTest = async () => {
-  const args = process.argv.slice(2);
-  console.log(args);
-  if (args) {
+  if (ARGS.some((a) => ['api', 'ui', 'deps'].includes(a))) {
     if (args.includes('api')) {
       await testApi();
     }
@@ -28,15 +38,17 @@ const runSmokeTest = async () => {
     await testUi();
     await checkDepedencies();
   }
+  Logger.info('Test(s) completed.');
+  process.exit(0);
 }
 
 if (SCHEDULE_CRON) {
-  console.log('Scheduling smoke tests...');
+  Logger.info('Scheduling smoke tests...');
   cron.schedule('0 */3 * * *', async () => {
-    console.log(`Running smoke test at ${new Date(Date.now()).toTimeString()}`);
+    Logger.info(`Running smoke test at ${new Date(Date.now()).toTimeString()}`);
     await runSmokeTest();
   });
 } else {
-  console.log('Running smoke tests now...');
+  Logger.info('Running smoke tests now...');
   runSmokeTest();
 }

@@ -6,11 +6,13 @@ const { IdentityTypes } = require('edgeware-node-types/dist/identity');
 const { SignalingTypes } = require('edgeware-node-types/dist/signaling');
 const { VotingTypes } = require('edgeware-node-types/dist/voting');
 const { performance } = require('perf_hooks');
+const Logger = require('js-logger');
+
 const { postToWebhook } = require('./util');
 
 const runAPITest = async (nodeUrl, types) => {
   return new Promise(async (resolve, reject) => {
-    console.log(`Connecting to API for ${nodeUrl}...`);
+    Logger.debug(`Connecting to API for ${nodeUrl}...`);
     let connected;
     setTimeout(() => {
       if (connected) return;
@@ -42,9 +44,9 @@ const runAPITest = async (nodeUrl, types) => {
 }
 
 const testApi = async () => {
-  console.log('Running API smoke tests');
+  Logger.info('Running API smoke tests');
   const req = await request.get('https://edgeware-supply.now.sh/');
-  const supplyIsValid = parseInt(req.text, 10).toString() === req.text;
+  const supplyIsValid = JSON.stringify(JSON.parse(req.text)) === req.text;
   if (supplyIsValid) {
     postToWebhook(`✅ Edgeware supply endpoint returns valid result: ${req.text}`);
   } else {

@@ -1,7 +1,8 @@
 const request = require('superagent');
+const Logger = require('js-logger');
 
 const postToWebhook = async (message) => {
-  console.log(`POST: ${message}`);
+  Logger.warn(`POST: ${message}`);
   if (process.env.WEBHOOK_URL) {
     const data = JSON.stringify({ text: message });
     return request.post(process.env.WEBHOOK_URL)

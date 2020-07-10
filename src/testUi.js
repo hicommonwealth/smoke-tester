@@ -2,12 +2,14 @@ const fs = require('fs');
 const webdriver = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const ipfsClient = require('ipfs-http-client');
+const { performance } = require('perf_hooks');
+const Logger = require('js-logger');
 const { postToWebhook } = require('./util');
 
 const DRIVER_TIMEOUT = 15000;
 
 const getAllCommunities = async (driver) => {
-  console.log('Starting getAllCommunities');
+  Logger.debug('Reading communities from homepage.');
   try {
     const community = await driver.findElements(webdriver.By.className('communities'));
     const elts = await community[0].findElements(webdriver.By.className('home-card'));
@@ -23,29 +25,30 @@ const getAllCommunities = async (driver) => {
 };
 
 const clickIntoCommunity = async (driver, identifyingText) => {
-  console.log('Starting clickIntoCommunity:', identifyingText);
-  try {
-    const homeElt = (await driver.findElements(webdriver.By.className('header-logo')))[0];
-    await homeElt.click();
-    await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), DRIVER_TIMEOUT);
-    const { elts } = await getAllCommunities(driver);
-    for (let index = 0; index < elts.length; index++) {
-      const element = elts[index];
-      const text = await element.getText();
-      if (text === identifyingText) {
-        await element.click();
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
-        break;
-      }
+  Logger.debug('Clicking header logo.');
+  const community = identifyingText.split('\n')[0];
+  const homeElt = (await driver.findElements(webdriver.By.className('header-logo')))[0];
+  await homeElt.click();
+  await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), DRIVER_TIMEOUT);
+  const { elts } = await getAllCommunities(driver);
+  for (let index = 0; index < elts.length; index++) {
+    const element = elts[index];
+    const text = await element.getText();
+    if (text === identifyingText) {
+      Logger.debug('Clicking:', community);
+      const clickTime = performance.now();
+      await element.click();
+      await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
+      const loadTime = performance.now();
+      return loadTime - clickTime;
     }
-  } catch (error) {
-    return await clickIntoCommunity(driver, identifyingText);
   }
+  throw new Error('Failed to locate community:', community);
 };
 
 const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
-  console.log('Starting clickThroughNavItems:', communityText);
   const communityTitle = communityText.split('\n')[0];
+  Logger.debug('Starting clickThroughNavItems:', communityTitle);
   let headerElts = await driver.findElements(webdriver.By.className('NavigationItem undefined'));
   const visited = [];
   while (visited.length < headerElts.length) {
@@ -54,29 +57,24 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
       const text = await element.getText();
 
       if (visited.indexOf(text) === -1) {
-        console.log(`Clicking ${text} of ${communityTitle}`);
+        Logger.debug(`Clicking ${text} of ${communityTitle}`);
         visited.push(text);
         await element.click();
-        try {
-          if (text.toLowerCase().indexOf('council') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), DRIVER_TIMEOUT);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CollectiveMember')), DRIVER_TIMEOUT);
-          } else if (text.toLowerCase().indexOf('proposal') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('proposals-subheader')), DRIVER_TIMEOUT);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ProposalRow')), DRIVER_TIMEOUT);
-          } else if (text.toLowerCase().indexOf('discussions') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
-          } else if (text.toLowerCase().indexOf('validators') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('validators-preheader')), DRIVER_TIMEOUT);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ValidatorRow')), DRIVER_TIMEOUT);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('val-action')), DRIVER_TIMEOUT);
-          }
-          const image = await driver.takeScreenshot();
-          fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
-          postToWebhook(`✅ Automated test succeeded for ${communityTitle}: ${text}`);
-        } catch (e) {
-          postToWebhook(`❌ Automated test failed for ${communityTitle}: ${text} \n ${e.message}`);
+        if (text.toLowerCase().indexOf('council') !== -1) {
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), DRIVER_TIMEOUT);
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CollectiveMember')), DRIVER_TIMEOUT);
+        } else if (text.toLowerCase().indexOf('proposal') !== -1) {
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('proposals-subheader')), DRIVER_TIMEOUT);
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ProposalRow')), DRIVER_TIMEOUT);
+        } else if (text.toLowerCase().indexOf('discussions') !== -1) {
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
+        } else if (text.toLowerCase().indexOf('validators') !== -1) {
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('validators-preheader')), DRIVER_TIMEOUT);
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ValidatorRow')), DRIVER_TIMEOUT);
+          await driver.wait(webdriver.until.elementLocated(webdriver.By.className('val-action')), DRIVER_TIMEOUT);
         }
+        const image = await driver.takeScreenshot();
+        fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
         break;
       }
 
@@ -87,36 +85,32 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
 };
 
 const runThroughFlows = async (event, driver, identifier) => {
-  console.log('Starting runThroughFlows:', identifier);
-  const { elts, eltDetails } = await getAllCommunities(driver);
-  let eelts = elts;
-  const seenText = [];
-  while (seenText.length < eltDetails.length) {
-    for (let index = 0; index < eelts.length; index++) {
-      const element = eelts[index];
-      const text = await element.getText();
-      const communityTitle = text.split('\n')[0];
-      if (!seenText.includes(text)) {
-        console.log(`Clicking ${communityTitle}`);
-        seenText.push(text);
-        await element.click();
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
-        const image = await driver.takeScreenshot();
-        fs.writeFileSync(`output/${communityTitle}-1-homepage.png`, image, 'base64');
-        await clickThroughNavItems(driver, text, event.webhookUrl);
-        const homeElt = (await driver.findElements(webdriver.By.className('header-logo')))[0];
-        await homeElt.click();
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), DRIVER_TIMEOUT);
-        break;
-      }
-    }
+  Logger.debug('Running through community flows.');
 
-    eelts = await driver.findElements(webdriver.By.className('home-card'));
+  // gather all communities
+  const { elts } = await getAllCommunities(driver);
+  const texts = await Promise.all(elts.map((e) => e.getText()));
+  for (const text of texts) {
+    const community = text.split('\n')[0];
+    try {
+      // first navigate to discussion page and screenshot it
+      const loadTime = await clickIntoCommunity(driver, text);
+      postToWebhook(`⏰ Load time for ${community} discussions: ${loadTime.toFixed(2)}ms.`);
+
+      const image = await driver.takeScreenshot();
+      fs.writeFileSync(`output/${community}-1-homepage.png`, image, 'base64');
+
+      // then click through the sidebar/navigation menu
+      await clickThroughNavItems(driver, text, event.webhookUrl);
+      postToWebhook(`✅ Automated tests succeeded for ${community}.`);
+    } catch (e) {
+      postToWebhook(`❌ Automated tests failed for ${community}. \n ${e.message}`);
+    }
   }
 };
 
 const setupDriver = (event) => {
-  console.log('Setting up headless browser driver');
+  Logger.debug('Setting up headless browser driver');
   const builder = new webdriver.Builder().forBrowser('chrome');
   const chromeOptions = new chrome.Options();
   const defaultChromeFlags = [
@@ -146,7 +140,7 @@ const setupDriver = (event) => {
 };
 
 const uploadPicsToIpfs = async (webhookUrl) => {
-  console.log('Uploading screenshots to IPFS');
+  Logger.debug('Uploading screenshots to IPFS');
   try {
     const ipfs = ipfsClient('/ip4/127.0.0.1/tcp/5001');
     const pics = fs.readdirSync('output');
@@ -171,7 +165,7 @@ const uploadPicsToIpfs = async (webhookUrl) => {
 }
 
 const testUi = async () => {
-  console.log('Running UI smoke tests');
+  Logger.info('Running UI smoke tests');
   if (!fs.existsSync('output/')) {
     fs.mkdirSync('output/');
   }
@@ -180,13 +174,13 @@ const testUi = async () => {
     webhookUrl: process.env.WEBHOOK_URL,
   };
   const driver = setupDriver(event);
-  console.log('Driver setup complete. Starting headless browser now');
+  Logger.info('Driver setup complete. Starting headless browser now');
   driver.get(event.url);
   await runThroughFlows(event, driver);
   await uploadPicsToIpfs(event.webhookUrl);
   driver.close();
   driver.quit();
-  console.log('Driver quit, all done\n');
+  Logger.info('Driver quit, all done\n');
 }
 
 module.exports = testUi;

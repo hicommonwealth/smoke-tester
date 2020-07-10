@@ -4,7 +4,7 @@ const { postToWebhook } = require('./util');
 
 const checkDependencies = async () => {
   console.log('Checking for dependency updates');
-  const pkg = fs.readFileSync(`${__dirname}/../commonwealth/package.json`, 'utf-8');
+  const pkg = fs.readFileSync(`${__dirname}/../../commonwealth/package.json`, 'utf-8');
   const parsedPkg = JSON.parse(pkg);
   const upgraded = await ncu.run({
     pre: 1,
@@ -18,7 +18,6 @@ const checkDependencies = async () => {
       .map(([k,v]) => ([k, `${parsedPkg['dependencies'][k]} --> ${v}`]))
   )
   await postToWebhook(`\`\`\`Polkadot dependencies to upgrade ${JSON.stringify(filtered, null, 4)}\`\`\``);
-  process.exit(0)
 };
 
 module.exports = checkDependencies;
