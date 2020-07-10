@@ -1,8 +1,9 @@
 const fs = require('fs');
 const ncu = require('npm-check-updates');
-const smoker = require('./');
+const { postToWebhook } = require('./util');
 
 const checkDependencies = async () => {
+  console.log('Checking for dependency updates');
   const pkg = fs.readFileSync(`${__dirname}/../commonwealth/package.json`, 'utf-8');
   const parsedPkg = JSON.parse(pkg);
   const upgraded = await ncu.run({
@@ -16,7 +17,7 @@ const checkDependencies = async () => {
       .filter(([k,v]) => k.includes('polkadot'))
       .map(([k,v]) => ([k, `${parsedPkg['dependencies'][k]} --> ${v}`]))
   )
-  await smoker.postToWebhook(`\`\`\`Polkadot dependencies to upgrade ${JSON.stringify(filtered, null, 4)}\`\`\``);
+  await postToWebhook(`\`\`\`Polkadot dependencies to upgrade ${JSON.stringify(filtered, null, 4)}\`\`\``);
   process.exit(0)
 };
 

@@ -30,11 +30,11 @@ ipfs --daemon &
 To run the smoke tests:
 
 ```
-node index.js
+yarn start
 ```
 
 To schedule the smoke tests:
 
 ```
-SCHEDULE_CRON=true node cron.js
+yarn schedule
 ```
