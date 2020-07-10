@@ -96,9 +96,9 @@ const testApi = async () => {
       const tMs = (tEnd - tStart);
       // TODO: send this out to metrics/instrumentation
 
-      postToWebhook(`✅ Polkadot API connection test succeeded for ${nodeUrl} in ${tMs.toFixed(2)}ms.`);
+      postToWebhook(`✅ API connection test succeeded for ${nodeUrl} in ${tMs.toFixed(2)}ms.`);
     } catch (e) {
-      postToWebhook(`❌ Polkadot API connection test failed for ${nodeUrl}: ${e.message}.`);
+      postToWebhook(`❌ API connection test failed for ${nodeUrl}: ${e.message}.`);
     }
   }
 }
