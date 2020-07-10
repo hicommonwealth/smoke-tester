@@ -27,14 +27,14 @@ ipfs --daemon &
 
 ### Usage
 
-To run the smoke tests:
+To run smoke tests, specifying which test(s) you want to run (will run all tests if none are specified):
 
 ```
-yarn start
+yarn start [api|ui|deps]
 ```
 
 To schedule the smoke tests:
 
 ```
-yarn schedule
+yarn schedule [api|ui|deps]
 ```

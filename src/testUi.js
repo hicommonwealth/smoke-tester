@@ -4,6 +4,8 @@ const chrome = require('selenium-webdriver/chrome');
 const ipfsClient = require('ipfs-http-client');
 const { postToWebhook } = require('./util');
 
+const DRIVER_TIMEOUT = 15000;
+
 const getAllCommunities = async (driver) => {
   console.log('Starting getAllCommunities');
   try {
@@ -25,14 +27,14 @@ const clickIntoCommunity = async (driver, identifyingText) => {
   try {
     const homeElt = (await driver.findElements(webdriver.By.className('header-logo')))[0];
     await homeElt.click();
-    await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), 5000);
+    await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), DRIVER_TIMEOUT);
     const { elts } = await getAllCommunities(driver);
     for (let index = 0; index < elts.length; index++) {
       const element = elts[index];
       const text = await element.getText();
       if (text === identifyingText) {
         await element.click();
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), 5000);
+        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
         break;
       }
     }
@@ -57,17 +59,17 @@ const clickThroughNavItems = async (driver, communityText, webhookUrl) => {
         await element.click();
         try {
           if (text.toLowerCase().indexOf('council') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), 15000);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CollectiveMember')), 15000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('council-candidates')), DRIVER_TIMEOUT);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('CollectiveMember')), DRIVER_TIMEOUT);
           } else if (text.toLowerCase().indexOf('proposal') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('proposals-subheader')), 10000);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ProposalRow')), 5000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('proposals-subheader')), DRIVER_TIMEOUT);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ProposalRow')), DRIVER_TIMEOUT);
           } else if (text.toLowerCase().indexOf('discussions') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), 5000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
           } else if (text.toLowerCase().indexOf('validators') !== -1) {
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('validators-preheader')), 15000);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ValidatorRow')), 15000);
-            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('val-action')), 15000);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('validators-preheader')), DRIVER_TIMEOUT);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('ValidatorRow')), DRIVER_TIMEOUT);
+            await driver.wait(webdriver.until.elementLocated(webdriver.By.className('val-action')), DRIVER_TIMEOUT);
           }
           const image = await driver.takeScreenshot();
           fs.writeFileSync(`output/${communityTitle}-2-${text.toLowerCase()}.png`, image, 'base64');
@@ -98,13 +100,13 @@ const runThroughFlows = async (event, driver, identifier) => {
         console.log(`Clicking ${communityTitle}`);
         seenText.push(text);
         await element.click();
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), 5000);
+        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('DiscussionRow')), DRIVER_TIMEOUT);
         const image = await driver.takeScreenshot();
         fs.writeFileSync(`output/${communityTitle}-1-homepage.png`, image, 'base64');
         await clickThroughNavItems(driver, text, event.webhookUrl);
         const homeElt = (await driver.findElements(webdriver.By.className('header-logo')))[0];
         await homeElt.click();
-        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), 5000);
+        await driver.wait(webdriver.until.elementLocated(webdriver.By.className('communities')), DRIVER_TIMEOUT);
         break;
       }
     }

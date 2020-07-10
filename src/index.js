@@ -10,9 +10,24 @@ const checkDepedencies = require('./checkDeps');
 const SCHEDULE_CRON = process.env.SCHEDULE_CRON === 'true';
 
 const runSmokeTest = async () => {
-  await testApi();
-  await testUi();
-  await checkDepedencies();
+  const args = process.argv.slice(2);
+  console.log(args);
+  if (args) {
+    if (args.includes('api')) {
+      await testApi();
+    }
+    if (args.includes('ui')) {
+      await testUi();
+    }
+    if (args.includes('deps')) {
+      await checkDepedencies();
+    }
+  } else {
+    // no args = do everything
+    await testApi();
+    await testUi();
+    await checkDepedencies();
+  }
 }
 
 if (SCHEDULE_CRON) {
